@@ -3,7 +3,6 @@ from db import supabase
 
 st.set_page_config(page_title="Taxi Hotel", page_icon="🚕", layout="centered")
 
-# Estilos
 st.markdown("""
     <style>
     .main { background-color: #FFF9DB; }
@@ -20,21 +19,33 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-if "usuario" not in st.session_state:
+
+def login():
     st.title("🚕 Taxi Hotel")
     st.subheader("Iniciar sesión")
 
-    usuario = st.text_input("Usuario")
-    password = st.text_input("Contraseña", type="password")
+    usuario = st.text_input("Usuario").strip()
+    password = st.text_input("Contraseña", type="password").strip()
 
     if st.button("Ingresar"):
-        r = supabase.table("usuarios").select("*").eq("usuario", usuario).eq("password", password).execute()
+        if not usuario or not password:
+            st.warning("Completá usuario y contraseña")
+            return
+
+        try:
+            r = supabase.table("usuarios").select("*").eq("usuario", usuario).eq("password", password).execute()
+        except Exception as e:
+            st.error(f"Error consultando Supabase: {type(e).__name__}: {e}")
+            return
+
         if r.data:
             st.session_state.usuario = r.data[0]
             st.rerun()
         else:
             st.error("Usuario o contraseña incorrectos")
-else:
+
+
+def panel():
     u = st.session_state.usuario
     st.success(f"👋 Bienvenido, {u['nombre']} ({u['rol']})")
 
@@ -45,6 +56,13 @@ else:
     elif u["rol"] == "taxista":
         st.info("➡️ Ve al panel **Taxista** en el menú lateral")
 
-    if st.button("Cerrar sesión"):
+    st.divider()
+    if st.button("🚪 Cerrar sesión"):
         del st.session_state.usuario
         st.rerun()
+
+
+if "usuario" not in st.session_state:
+    login()
+else:
+    panel()
